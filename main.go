@@ -11,8 +11,12 @@ func main() {
 		Handler: mux,
 		Addr:    ":8080",
 	}
+
+	mux.Handle("/", http.FileServer(http.Dir(".")))
+
 	err := server.ListenAndServe()
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
+
 }
