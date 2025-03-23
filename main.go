@@ -34,7 +34,7 @@ func main() {
 }
 
 func (cfg *apiConfig) handlerCountRequests(w http.ResponseWriter, r *http.Request) {
-	count := cfg.fileserverHits.Load()
+	count := cfg.fileServerHits.Load()
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -44,11 +44,11 @@ func (cfg *apiConfig) handlerCountRequests(w http.ResponseWriter, r *http.Reques
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits.Add(1)
+		cfg.fileServerHits.Add(1)
 		next.ServeHTTP(w, r)
 	})
 }
 
 type apiConfig struct {
-	fileserverHits atomic.Int32
+	fileServerHits atomic.Int32
 }
