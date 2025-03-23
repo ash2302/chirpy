@@ -24,6 +24,7 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerCountRequests)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerResetCounter)
+	mux.HandleFunc("POST /api/validate_chirp", apiCfg.validateChirpHandler)
 
 	log.Printf("Serving files from %s on port: %s\n", rootFilePath, port)
 	err := srv.ListenAndServe()
