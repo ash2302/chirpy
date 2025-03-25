@@ -21,10 +21,11 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if len(params.Body) > 140 {
+	const maxChirpLength = 140
+	if len(params.Body) > maxChirpLength {
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, map[string]bool{"valid": true})
+	respondWithJSON(w, http.StatusOK, map[string]string{"cleaned_body": replaceProfane(params.Body)})
 }
