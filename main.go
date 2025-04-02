@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"github.com/ash2302/chirpy/internal/database"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"os"
+	"time"
 )
 
 import (
@@ -31,7 +33,9 @@ func main() {
 	const port = "8080"
 
 	apiCfg := apiConfig{
-		dbQueries: dbQueries,
+		fileServerHits: atomic.Int32{},
+		dbQueries:      dbQueries,
+		platform:       os.Getenv("PLATFORM"),
 	}
 
 	mux := http.NewServeMux()
@@ -45,8 +49,9 @@ func main() {
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(handler))
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerCountRequests)
-	mux.HandleFunc("POST /admin/reset", apiCfg.handlerResetCounter)
+	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("POST /api/validate_chirp", apiCfg.validateChirpHandler)
+	mux.HandleFunc("POST /api/users", apiCfg.createUsersHandler)
 
 	log.Printf("Serving files from %s on port: %s\n", rootFilePath, port)
 	err = srv.ListenAndServe()
@@ -59,4 +64,12 @@ func main() {
 type apiConfig struct {
 	fileServerHits atomic.Int32
 	dbQueries      *database.Queries
+	platform       string
+}
+
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
 }
