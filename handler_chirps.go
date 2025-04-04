@@ -2,13 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/ash2302/chirpy/internal/database"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 )
 
-func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Body string `json:"body"`
+		Body   string `json:"body"`
+		UserID string `json:"user_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -27,5 +30,21 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, map[string]string{"cleaned_body": replaceProfane(params.Body)})
+	cleanedBody := replaceProfane(params.Body)
+
+	userID, err := uuid.Parse(params.UserID)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	chirp, err := cfg.dbQueries.CreateChirp(r.Context(), database.CreateChirpParams{
+		Body:   cleanedBody,
+		UserID: userID,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not create Chirp")
+		return
+	}
+	respondWithJSON(w, http.StatusCreated, chirp)
 }
