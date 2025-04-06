@@ -53,6 +53,7 @@ func main() {
 	mux.HandleFunc("POST /api/users", apiCfg.createUsersHandler)
 	mux.HandleFunc("POST /api/chirps", apiCfg.handlerCreateChirp)
 	mux.HandleFunc("GET /api/chirps", apiCfg.handlerGetChirps)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerGetChirpByID)
 
 	log.Printf("Serving files from %s on port: %s\n", rootFilePath, port)
 	err = srv.ListenAndServe()
