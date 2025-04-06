@@ -2,13 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/ash2302/chirpy/internal/auth"
+	"github.com/ash2302/chirpy/internal/database"
 	"log"
 	"net/http"
 )
 
 func (cfg *apiConfig) createUsersHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -24,8 +27,24 @@ func (cfg *apiConfig) createUsersHandler(w http.ResponseWriter, r *http.Request)
 		respondWithError(w, http.StatusBadRequest, "Email is required")
 		return
 	}
+	if params.Password == "" {
+		respondWithError(w, http.StatusBadRequest, "Password is required")
+		return
+	}
 
-	user, err := cfg.dbQueries.CreateUser(r.Context(), params.Email)
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		log.Printf("Error hashing password: %s", err)
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+
+	dbParams := database.CreateUserParams{
+		Email:          params.Email,
+		HashedPassword: hashedPassword,
+	}
+
+	user, err := cfg.dbQueries.CreateUser(r.Context(), dbParams)
 	if err != nil {
 		log.Printf("Error creating user with email %s: %s", params.Email, err)
 		respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
