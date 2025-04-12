@@ -5,12 +5,14 @@ import (
 	"github.com/ash2302/chirpy/internal/auth"
 	"log"
 	"net/http"
+	"time"
 )
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email            string `json:"email"`
+		Password         string `json:"password"`
+		ExpiresInSeconds int    `json:"expires_in_seconds"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -34,10 +36,33 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, User{
-		ID:        user.ID,
+
+	const maxExpirationTime = 3600
+	expirationTime := time.Hour
+
+	if params.ExpiresInSeconds > 0 && params.ExpiresInSeconds <= maxExpirationTime {
+		expirationTime = time.Duration(params.ExpiresInSeconds) * time.Second
+	}
+
+	token, err := auth.MakeJWT(user.ID, cfg.jwtSecret, expirationTime)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to generate token")
+		return
+	}
+
+	type response struct {
+		ID        string    `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Email     string    `json:"email"`
+		Token     string    `json:"token"`
+	}
+
+	respondWithJSON(w, http.StatusOK, response{
+		ID:        user.ID.String(),
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+		Token:     token,
 	})
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/ash2302/chirpy/internal/auth"
 	"github.com/ash2302/chirpy/internal/database"
 	"github.com/google/uuid"
 	"log"
@@ -19,13 +20,23 @@ type Chirp struct {
 
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Body   string `json:"body"`
-		UserID string `json:"user_id"`
+		Body string `json:"body"`
 	}
 
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't find JWT")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT")
+		return
+	}
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 
 	if err != nil {
 		log.Printf("Error decoding body: %s", err)
@@ -40,12 +51,6 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 	}
 
 	cleanedBody := replaceProfane(params.Body)
-
-	userID, err := uuid.Parse(params.UserID)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
-		return
-	}
 
 	chirp, err := cfg.dbQueries.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   cleanedBody,

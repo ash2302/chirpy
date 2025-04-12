@@ -29,6 +29,11 @@ func main() {
 	}
 	dbQueries := database.New(db)
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("Error loading JWT secret")
+	}
+
 	const rootFilePath = "."
 	const port = "8080"
 
@@ -36,6 +41,7 @@ func main() {
 		fileServerHits: atomic.Int32{},
 		dbQueries:      dbQueries,
 		platform:       os.Getenv("PLATFORM"),
+		jwtSecret:      jwtSecret,
 	}
 
 	mux := http.NewServeMux()
@@ -68,6 +74,7 @@ type apiConfig struct {
 	fileServerHits atomic.Int32
 	dbQueries      *database.Queries
 	platform       string
+	jwtSecret      string
 }
 
 type User struct {
